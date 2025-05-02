@@ -1,103 +1,94 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React from "react";
+import WeatherChart from "@/components/weatherChart";
+import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
+
+const VisxChart = () => {
+  // Mock time-based data (e.g., hourly)
+  const times = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00"];
+
+  // Corresponding temperature and humidity readings
+  const temperature = [15, 17, 18, 20, 22, 100]; // Celsius
+  const humidity = [70, 68, 65, 63, 60, 100]; // Percent
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="flex flex-row bg-white p-5 h-screen">
+      <svg width="0" height="0">
+        <defs>
+          <linearGradient id="tempGradient" x1="0%" y1="50%" x2="100%" y2="50%">
+            <stop offset="0%" stopColor="#2196f3" /> {/* Blue (cold) */}
+            <stop offset="50%" stopColor="#f44336" /> {/* Red (hot) */}
+            <stop offset="100%" stopColor="#ffeb3b" /> {/* Yellow */}
+          </linearGradient>
+        </defs>
+      </svg>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div className="w-full grid grid-cols-1 justify-items-center relative">
+        <Gauge
+          value={temperature[temperature.length - 1]}
+          startAngle={-90}
+          endAngle={90}
+          innerRadius="60%"
+          outerRadius="100%"
+          sx={(theme) => ({
+            [`& .${gaugeClasses.valueText}`]: {
+              fontSize: 40,
+            },
+            [`& .${gaugeClasses.valueArc}`]: {
+              fill: "url(#tempGradient)",
+            },
+            [`& .${gaugeClasses.referenceArc}`]: {
+              fill: "#eeeeee",
+            },
+          })}
+          text={({ value, valueMax }) => `${value}°C`}
+        />
+        <p className="text-black text-2xl absolute pt-85">Temperature</p>
+      </div>
+
+      <WeatherChart />
+
+      {/* Gradient: Dry → Normal → Humid */}
+      <svg width="0" height="0">
+        <defs>
+          <linearGradient
+            id="humidityGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="0%"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <stop offset="20%" stopColor="#a1887f" /> {/* Brownish: Dry */}
+            <stop offset="50%" stopColor="#81d4fa" /> {/* Light blue: Normal */}
+            <stop offset="100%" stopColor="#1565c0" /> {/* Deep blue: Humid */}
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="w-full grid grid-cols-1 justify-items-center relative">
+        <Gauge
+          value={humidity[humidity.length - 1]}
+          startAngle={-90}
+          endAngle={90}
+          innerRadius="60%"
+          outerRadius="100%"
+          sx={(theme) => ({
+            [`& .${gaugeClasses.valueText}`]: {
+              fontSize: 40,
+            },
+            [`& .${gaugeClasses.valueArc}`]: {
+              fill: "url(#humidityGradient)",
+            },
+            [`& .${gaugeClasses.referenceArc}`]: {
+              fill: "#eeeeee",
+            },
+          })}
+          text={({ value, valueMax }) => `${value}%`}
+        />
+        <p className="text-black text-2xl absolute pt-85">Humidity</p>
+      </div>
+    </main>
   );
-}
+};
+
+export default VisxChart;
