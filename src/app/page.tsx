@@ -3,89 +3,136 @@
 import React from "react";
 import WeatherChart from "@/components/weatherChart";
 import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
+import Button from "@mui/material/Button";
+import ButtonGroup from "@mui/material/ButtonGroup";
+import Box from "@mui/material/Box";
+import { useState } from "react";
 
 const VisxChart = () => {
+  const [sensor, setSensor] = useState<number>(0);
+  const sensors = ["sensorA", "sensorB", "sensorC", "sensorD"];
   // Mock time-based data (e.g., hourly)
   const times = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00"];
 
   // Corresponding temperature and humidity readings
-  const temperature = [15, 17, 18, 20, 22, 100]; // Celsius
-  const humidity = [70, 68, 65, 63, 60, 100]; // Percent
+  const data = [
+    {
+      temperature: [15, 16, 18, 19, 21, 22],
+      humidity: [72, 70, 68, 67, 65, 64],
+    },
+    {
+      temperature: [14, 15, 17, 18, 20, 21],
+      humidity: [75, 73, 70, 69, 67, 66],
+    },
+    {
+      temperature: [16, 17, 19, 21, 23, 24],
+      humidity: [68, 66, 64, 62, 60, 58],
+    },
+    {
+      temperature: [13, 14, 15, 17, 19, 20],
+      humidity: [78, 76, 74, 72, 70, 68],
+    },
+  ];
 
   return (
-    <main className="flex flex-row bg-white p-5 h-screen">
-      <svg width="0" height="0">
-        <defs>
-          <linearGradient id="tempGradient" x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#2196f3" /> {/* Blue (cold) */}
-            <stop offset="50%" stopColor="#f44336" /> {/* Red (hot) */}
-            <stop offset="100%" stopColor="#ffeb3b" /> {/* Yellow */}
-          </linearGradient>
-        </defs>
-      </svg>
+    <main className="flex flex-col bg-white p-5 h-screen">
+      <Box className="mb-4">
+        <ButtonGroup variant="contained" aria-label="Basic button group">
+          {sensors.map((val, idx) => (
+            <Button
+              onClick={(e) => {
+                setSensor(idx);
+              }}
+            >
+              {val}
+            </Button>
+          ))}
+        </ButtonGroup>
+      </Box>
+      <div className="flex flex-row">
+        <svg width="250" height="250">
+          <defs>
+            <linearGradient
+              id="tempGradient"
+              x1="0%"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+            >
+              <stop offset="0%" stopColor="#2196f3" /> {/* Blue (cold) */}
+              <stop offset="50%" stopColor="#f44336" /> {/* Red (hot) */}
+              <stop offset="100%" stopColor="#ffeb3b" /> {/* Yellow */}
+            </linearGradient>
+          </defs>
+        </svg>
 
-      <div className="w-full grid grid-cols-1 justify-items-center relative">
-        <Gauge
-          value={temperature[temperature.length - 1]}
-          startAngle={-90}
-          endAngle={90}
-          innerRadius="60%"
-          outerRadius="100%"
-          sx={(theme) => ({
-            [`& .${gaugeClasses.valueText}`]: {
-              fontSize: 40,
-            },
-            [`& .${gaugeClasses.valueArc}`]: {
-              fill: "url(#tempGradient)",
-            },
-            [`& .${gaugeClasses.referenceArc}`]: {
-              fill: "#eeeeee",
-            },
-          })}
-          text={({ value, valueMax }) => `${value}°C`}
-        />
-        <p className="text-black text-2xl absolute pt-85">Temperature</p>
-      </div>
+        <div className="w-full grid grid-cols-1 justify-items-center relative">
+          <Gauge
+            value={
+              data[sensor].temperature[data[sensor].temperature.length - 1]
+            }
+            startAngle={-90}
+            endAngle={90}
+            innerRadius="60%"
+            outerRadius="100%"
+            sx={(theme) => ({
+              [`& .${gaugeClasses.valueText}`]: {
+                fontSize: 40,
+              },
+              [`& .${gaugeClasses.valueArc}`]: {
+                fill: "url(#tempGradient)",
+              },
+              [`& .${gaugeClasses.referenceArc}`]: {
+                fill: "#eeeeee",
+              },
+            })}
+            text={({ value, valueMax }) => `${value}°C`}
+          />
+          <p className="text-black text-2xl absolute pt-85">Temperature</p>
+        </div>
 
-      <WeatherChart />
+        <WeatherChart sensorId={sensor} data={data} />
 
-      {/* Gradient: Dry → Normal → Humid */}
-      <svg width="0" height="0">
-        <defs>
-          <linearGradient
-            id="humidityGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="0%"
-          >
-            <stop offset="20%" stopColor="#a1887f" /> {/* Brownish: Dry */}
-            <stop offset="50%" stopColor="#81d4fa" /> {/* Light blue: Normal */}
-            <stop offset="100%" stopColor="#1565c0" /> {/* Deep blue: Humid */}
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="w-full grid grid-cols-1 justify-items-center relative">
-        <Gauge
-          value={humidity[humidity.length - 1]}
-          startAngle={-90}
-          endAngle={90}
-          innerRadius="60%"
-          outerRadius="100%"
-          sx={(theme) => ({
-            [`& .${gaugeClasses.valueText}`]: {
-              fontSize: 40,
-            },
-            [`& .${gaugeClasses.valueArc}`]: {
-              fill: "url(#humidityGradient)",
-            },
-            [`& .${gaugeClasses.referenceArc}`]: {
-              fill: "#eeeeee",
-            },
-          })}
-          text={({ value, valueMax }) => `${value}%`}
-        />
-        <p className="text-black text-2xl absolute pt-85">Humidity</p>
+        {/* Gradient: Dry → Normal → Humid */}
+        <svg width="300" height="300">
+          <defs>
+            <linearGradient
+              id="humidityGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="20%" stopColor="#a1887f" /> {/* Brownish: Dry */}
+              <stop offset="50%" stopColor="#81d4fa" />{" "}
+              {/* Light blue: Normal */}
+              <stop offset="100%" stopColor="#1565c0" />{" "}
+              {/* Deep blue: Humid */}
+            </linearGradient>
+          </defs>
+        </svg>
+        <div className="w-full grid grid-cols-1 justify-items-center relative">
+          <Gauge
+            value={data[sensor].humidity[data[sensor].humidity.length - 1]}
+            startAngle={-90}
+            endAngle={90}
+            innerRadius="60%"
+            outerRadius="100%"
+            sx={(theme) => ({
+              [`& .${gaugeClasses.valueText}`]: {
+                fontSize: 40,
+              },
+              [`& .${gaugeClasses.valueArc}`]: {
+                fill: "url(#humidityGradient)",
+              },
+              [`& .${gaugeClasses.referenceArc}`]: {
+                fill: "#eeeeee",
+              },
+            })}
+            text={({ value, valueMax }) => `${value}%`}
+          />
+          <p className="text-black text-2xl absolute pt-85">Humidity</p>
+        </div>
       </div>
     </main>
   );

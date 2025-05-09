@@ -1,19 +1,43 @@
+// components/WeatherChart.tsx
 "use client";
 
-import { LineChart } from "@mui/x-charts/LineChart";
+import React from "react";
+import { LineChart } from "@mui/x-charts";
+import { SensorData } from "@/type/sensor";
 
-const WeatherChart = () => {
-  // Mock time-based data (e.g., hourly)
+interface WeatherChartProps {
+  sensorId: number;
+  data: SensorData[];
+}
+
+const WeatherChart: React.FC<WeatherChartProps> = ({ sensorId, data }) => {
   const times = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00"];
 
-  // Corresponding temperature and humidity readings
-  const temperature = [15, 17, 18, 20, 22, 23]; // Celsius
-  const humidity = [70, 68, 65, 63, 60, 58]; // Percent
+  // Construct series for all sensors
+  const series = data.flatMap((sensor, index) => {
+    const isSelected = index === sensorId;
+
+    return [
+      {
+        id: `temp-${index}`,
+        label: isSelected ? `Sensor ${index + 1} Temp (°C)` : undefined,
+        data: sensor.temperature,
+        color: isSelected ? "#ff5722" : "#ffccbc",
+      },
+      {
+        id: `hum-${index}`,
+        label: isSelected ? `Sensor ${index + 1} Humidity (%)` : undefined,
+        data: sensor.humidity,
+        color: isSelected ? "#2196f3" : "#bbdefb",
+      },
+    ];
+  });
 
   return (
     <LineChart
       width={600}
       height={400}
+      series={series}
       xAxis={[
         {
           scaleType: "point",
@@ -22,16 +46,7 @@ const WeatherChart = () => {
           valueFormatter: (value) => value.toString(),
         },
       ]}
-      series={[
-        {
-          id: "temp",
-          data: temperature,
-          label: "Temperature (°C)",
-          color: "#ff5722",
-        },
-        { id: "hum", data: humidity, label: "Humidity (%)", color: "#2196f3" },
-      ]}
-      grid={{ horizontal: true }}
+      grid={{ horizontal: true, vertical: true }}
     />
   );
 };
