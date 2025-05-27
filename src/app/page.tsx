@@ -8,7 +8,6 @@ import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
 import Button from "@mui/material/Button";
 import Popover from "@mui/material/Popover";
 import Badge from "@mui/material/Badge";
-import Divider from "@mui/material/Divider";
 import { TransitionGroup } from "react-transition-group";
 
 import { InputNumber } from "antd";

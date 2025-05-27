@@ -1,7 +1,6 @@
 "use client";
 
 import { forwardRef, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { TriangleAlert } from "lucide-react";
 import Collapse from "@mui/material/Collapse";
 
