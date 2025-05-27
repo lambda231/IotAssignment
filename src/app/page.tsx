@@ -198,6 +198,14 @@ const Page = () => {
   }
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setTempMin(tempMinRef.current);
+    setTempMax(tempMaxRef.current);
+    setHumidityMin(humidityMinRef.current);
+    setHumidityMax(humidityMaxRef.current);
+    setCo2Min(co2MinRef.current);
+    setCo2Max(co2MaxRef.current);
+    setTvocMin(tvocMinRef.current);
+    setTvocMax(tvocMaxRef.current);
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
