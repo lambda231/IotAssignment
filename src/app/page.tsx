@@ -1,26 +1,26 @@
 "use client";
 
 import React from "react";
-import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
-import Button from "@mui/material/Button";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import Box from "@mui/material/Box";
-
-import { InputNumber } from "antd";
-
-import Snackbar from "@mui/material/Snackbar";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-
-import { TriangleAlert, Settings } from "lucide-react";
-
 import { useState, useEffect, useRef } from "react";
 import Papa from "papaparse";
 
+import { Gauge, gaugeClasses } from "@mui/x-charts/Gauge";
+import Button from "@mui/material/Button";
+import Popover from "@mui/material/Popover";
+import Badge from "@mui/material/Badge";
+import Divider from "@mui/material/Divider";
+import { TransitionGroup } from "react-transition-group";
+
+import { InputNumber } from "antd";
+
+import { TriangleAlert, Settings } from "lucide-react";
+import AlarmCard from "@/components/alarmCard";
+import FlashBox from "@/components/flashBox";
+import DraggableScrollContainer from "@/components/draggableScrollContainer";
+
 import { SensorData } from "@/type/sensor";
 import WeatherChart from "@/components/weatherChart";
-import { get } from "http";
-import { Alarm } from "@mui/icons-material";
+import AlarmItem from "@/components/alarmItem";
 
 interface RawRow {
   [key: string]: string;
@@ -42,8 +42,9 @@ const Page = () => {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const [alarmOpen, setAlarmOpen] = useState(false);
-  const [alarmMessage, setAlarmMessage] = useState("");
+
+  const [anchorElAlarm, setAnchorElAlarm] = useState<null | HTMLElement>(null);
+  const openAlarm = Boolean(anchorElAlarm);
 
   const [tempMin, setTempMin] = useState<number | null>(null);
   const tempMinRef = useRef<number | null>(tempMin);
@@ -62,30 +63,21 @@ const Page = () => {
   const [tvocMax, setTvocMax] = useState<number | null>(null);
   const tvocMaxRef = useRef<number | null>(tvocMax);
 
-  useEffect(() => {
-    tempMinRef.current = tempMin;
-  }, [tempMin]);
-  useEffect(() => {
-    tempMaxRef.current = tempMax;
-  }, [tempMax]);
-  useEffect(() => {
-    humidityMinRef.current = humidityMin;
-  }, [humidityMin]);
-  useEffect(() => {
-    humidityMaxRef.current = humidityMax;
-  }, [humidityMaxRef]);
-  useEffect(() => {
-    co2MinRef.current = co2Min;
-  }, [co2Min]);
-  useEffect(() => {
-    co2MaxRef.current = co2Max;
-  }, [co2Max]);
-  useEffect(() => {
-    tvocMinRef.current = tvocMin;
-  }, [tvocMin]);
-  useEffect(() => {
-    tvocMaxRef.current = tvocMax;
-  }, [tvocMax]);
+  type AlertData = {
+    message: string;
+    activated: boolean;
+  };
+
+  const [alerts, setAlerts] = useState<AlertData[]>([
+    { message: "Temperature too low!", activated: false },
+    { message: "Temperature too high!", activated: false },
+    { message: "Humidity too low!", activated: false },
+    { message: "Humidity too high!", activated: false },
+    { message: "CO2 too low!", activated: false },
+    { message: "CO2 too high!", activated: false },
+    { message: "TVOC too low!", activated: false },
+    { message: "TVOC too high!", activated: false },
+  ]);
 
   useEffect(() => {
     if (effectRan.current) return;
@@ -126,54 +118,37 @@ const Page = () => {
             }));
 
             // Check for alarms
-            console.log(
-              tempMinRef.current,
-              tempMaxRef.current,
-              humidityMinRef.current,
-              humidityMaxRef.current,
-              co2MinRef.current,
-              co2MaxRef.current,
-              tvocMinRef.current,
-              tvocMaxRef.current
-            );
-            if (tempMinRef.current !== null && nextTemp < tempMinRef.current) {
-              setAlarmMessage("Temperature too low!");
-              setAlarmOpen(true);
-            }
-            if (tempMaxRef.current !== null && nextTemp > tempMaxRef.current) {
-              setAlarmMessage("Temperature too high!");
-              setAlarmOpen(true);
-            }
-            if (
+            // console.log(
+            //   tempMinRef.current,
+            //   tempMaxRef.current,
+            //   humidityMinRef.current,
+            //   humidityMaxRef.current,
+            //   co2MinRef.current,
+            //   co2MaxRef.current,
+            //   tvocMinRef.current,
+            //   tvocMaxRef.current
+            // );
+
+            const alertActivation = [
+              tempMinRef.current !== null && nextTemp < tempMinRef.current,
+              tempMaxRef.current !== null && nextTemp > tempMaxRef.current,
               humidityMinRef.current !== null &&
-              nextHumidity < humidityMinRef.current
-            ) {
-              setAlarmMessage("Humidity too low!");
-              setAlarmOpen(true);
-            }
-            if (
+                nextHumidity < humidityMinRef.current,
               humidityMaxRef.current !== null &&
-              nextHumidity > humidityMaxRef.current
-            ) {
-              setAlarmMessage("Humidity too high!");
-              setAlarmOpen(true);
-            }
-            if (co2MinRef.current !== null && nextCo2 < co2MinRef.current) {
-              setAlarmMessage("CO2 level too low!");
-              setAlarmOpen(true);
-            }
-            if (co2MaxRef.current !== null && nextCo2 > co2MaxRef.current) {
-              setAlarmMessage("CO2 level too high!");
-              setAlarmOpen(true);
-            }
-            if (tvocMinRef.current !== null && nextTvoc < tvocMinRef.current) {
-              setAlarmMessage("TVOC level too low!");
-              setAlarmOpen(true);
-            }
-            if (tvocMaxRef.current !== null && nextTvoc > tvocMaxRef.current) {
-              setAlarmMessage("TVOC level too high!");
-              setAlarmOpen(true);
-            }
+                nextHumidity > humidityMaxRef.current,
+              co2MinRef.current !== null && nextCo2 < co2MinRef.current,
+              co2MaxRef.current !== null && nextCo2 > co2MaxRef.current,
+              tvocMinRef.current !== null && nextTvoc < tvocMinRef.current,
+              tvocMaxRef.current !== null && nextTvoc > tvocMaxRef.current,
+            ].map((condition, index) => {
+              setAlerts((prevAlerts) =>
+                prevAlerts.map((alert, i) =>
+                  i === index ? { ...alert, activated: condition } : alert
+                )
+              );
+
+              return condition;
+            });
 
             indexRef.current += 1;
           } else {
@@ -184,6 +159,12 @@ const Page = () => {
         return () => clearInterval(interval);
       });
   }, []);
+
+  useEffect(() => {
+    if (alerts.filter((value) => value.activated).length === 0) {
+      handleCloseAlarm();
+    }
+  }, [alerts]);
 
   function getTemperatureColor(value: number): string {
     if (value <= 0) return "#2196f3"; // Blue
@@ -223,152 +204,307 @@ const Page = () => {
     setAnchorEl(null);
   };
 
+  const handleClickAlarm = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (alerts.filter((value) => value.activated).length === 0) {
+      handleCloseAlarm();
+      return;
+    }
+    setAnchorElAlarm(event.currentTarget);
+  };
+  const handleCloseAlarm = () => {
+    setAnchorElAlarm(null);
+  };
+
+  const handleConfirmAlarmSetting = () => {
+    tempMinRef.current = tempMin;
+    tempMaxRef.current = tempMax;
+    humidityMinRef.current = humidityMin;
+    humidityMaxRef.current = humidityMax;
+    co2MinRef.current = co2Min;
+    co2MaxRef.current = co2Max;
+    tvocMinRef.current = tvocMin;
+    tvocMaxRef.current = tvocMax;
+
+    handleClose();
+  };
+
+  const handleCancelAlarmSetting = () => {
+    handleClose();
+  };
+
   return (
     <main className="flex flex-col gap-y-2 p-4">
-      <Snackbar
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        open={alarmOpen}
-        autoHideDuration={5000}
-        // onClose={handleClose}
-        message={alarmMessage}
-        // action={action}
-      />
-      <div className="w-full h-16 border-2 border-gray-300">
-        <Button
-          id="basic-button"
-          aria-controls={open ? "basic-menu" : undefined}
-          aria-haspopup="true"
-          aria-expanded={open ? "true" : undefined}
-          className="flex flex-row gap-x-2 p-2"
-          onClick={handleClick}
-        >
-          <Settings /> Alarm Setting
-        </Button>
-        <Menu
-          id="basic-menu"
-          anchorEl={anchorEl}
-          open={open}
-          onClose={handleClose}
-          className="w-150"
-        >
-          <MenuItem>
-            <div className="flex flex-row items-center">
-              <span className="w-60">Temperature safe range (°C): </span>
-              <div className="flex flex-row gap-x-2 w-50 items-center">
-                <InputNumber
-                  id="tempMin"
-                  className="h-full w-full"
-                  placeholder="Not set"
-                  step={0.01}
-                  value={tempMin}
-                  onChange={(value) => {
-                    setTempMin(value);
-                  }}
+      <div className="flex flex-row gap-2 w-full h-20 bg-white border-b-2 border-gray-300 items-center sticky top-0 py-2 z-100">
+        <div className="flex flex-row w-full sm:w-24 sm:w-50 h-full ">
+          <Button
+            id="basic-button"
+            aria-controls={open ? "basic-menu" : undefined}
+            aria-haspopup="true"
+            aria-expanded={open ? "true" : undefined}
+            variant="contained"
+            className="flex w-full h-full gap-x-2"
+            onClick={handleClick}
+          >
+            <Settings size={50} />
+            <span className="hidden sm:block"> Alarm Setting</span>
+          </Button>
+          <Popover
+            id="basic-menu"
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "left",
+            }}
+          >
+            <div className="w-full grid grid-cols-1 gap-y-2 p-4">
+              <div>
+                <div className="flex flex-row items-center">
+                  <span className="w-60">Temperature safe range (°C): </span>
+                  <div className="flex flex-row gap-x-2 w-50 items-center">
+                    <InputNumber
+                      id="tempMin"
+                      name="tempMin"
+                      className="h-full w-full"
+                      placeholder="Not set"
+                      step={0.01}
+                      value={tempMin}
+                      onChange={(value) => {
+                        setTempMin(value);
+                      }}
+                    />
+                    <span>-</span>
+                    <InputNumber
+                      id="tempMax"
+                      name="tempMax"
+                      placeholder="Not set"
+                      step={0.01}
+                      value={tempMax}
+                      onChange={(value) => {
+                        setTempMax(value);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="flex flex-row items-center">
+                  <span className="w-60"> Humidity safe range (%): </span>
+                  <div className="flex flex-row gap-x-2 w-50 items-center">
+                    <InputNumber
+                      id="humidityMin"
+                      name="humidityMin"
+                      placeholder="Not set"
+                      step={0.01}
+                      min={0}
+                      max={100}
+                      value={humidityMin}
+                      onChange={(value) => {
+                        setHumidityMin(value);
+                      }}
+                    />{" "}
+                    <span>-</span>{" "}
+                    <InputNumber
+                      id="humidityMax"
+                      name="humidityMax"
+                      placeholder="Not set"
+                      step={0.01}
+                      min={0}
+                      max={100}
+                      value={humidityMax}
+                      onChange={(value) => {
+                        setHumidityMax(value);
+                      }}
+                    />{" "}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="flex flex-row items-center">
+                  <span className="w-60"> CO2 safe range (ppm): </span>
+                  <div className="flex flex-row gap-x-2 w-50 items-center">
+                    <InputNumber
+                      id="co2Min"
+                      name="co2Min"
+                      placeholder="Not set"
+                      step={0.01}
+                      min={0}
+                      max={1000}
+                      value={co2Min}
+                      onChange={(value) => {
+                        setCo2Min(value);
+                      }}
+                    />{" "}
+                    <span>-</span>{" "}
+                    <InputNumber
+                      id="co2Max"
+                      name="co2Max"
+                      placeholder="Not set"
+                      step={0.01}
+                      min={0}
+                      max={1000}
+                      value={co2Max}
+                      onChange={(value) => {
+                        setCo2Max(value);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="flex flex-row items-center">
+                  <span className="w-60"> TVOC safe range (ppb):</span>
+                  <div className="flex flex-row gap-x-2 w-50 items-center">
+                    <InputNumber
+                      id="tvocMin"
+                      name="tvocMin"
+                      placeholder="Not set"
+                      step={0.01}
+                      min={0}
+                      max={1000}
+                      value={tvocMin}
+                      onChange={(value) => {
+                        setTvocMin(value);
+                      }}
+                    />{" "}
+                    <span>-</span>{" "}
+                    <InputNumber
+                      id="tvocMax"
+                      name="tvocMax"
+                      placeholder="Not set"
+                      step={0.01}
+                      min={0}
+                      max={1000}
+                      value={tvocMax}
+                      onChange={(value) => {
+                        setTvocMax(value);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="grid grid-cols-2 w-full justify-end gap-x-2">
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={handleCancelAlarmSetting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="contained"
+                    onClick={handleConfirmAlarmSetting}
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Popover>
+        </div>
+        <div className="sm:flex flex-row w-full h-full rounded-8 border-2 border-gray-300 shadow-md overflow-x-hidden hidden">
+          <FlashBox
+            items={alerts.filter((value) => value.activated)}
+            className="h-full px-2 border-r-2 border-gray-300"
+          >
+            <Badge
+              color="warning"
+              badgeContent={alerts.filter((value) => value.activated).length}
+              max={10}
+              overlap="circular"
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+            >
+              <TriangleAlert
+                size={58}
+                className={
+                  alerts.filter((value) => value.activated).length === 0
+                    ? "text-gray-500"
+                    : ""
+                }
+              />
+            </Badge>
+          </FlashBox>
+
+          <TransitionGroup className="flex flex-row overflow-x-hidden gap-x-2 h-full">
+            {alerts.map((alert, index) => (
+              <AlarmCard
+                key={index}
+                visible={alert.activated}
+                message={alert.message}
+              />
+            ))}
+          </TransitionGroup>
+        </div>
+
+        <div className="w-full h-full block sm:hidden">
+          <Button
+            id="alarm-button"
+            aria-controls={openAlarm ? "alarm-popover" : undefined}
+            aria-haspopup="true"
+            aria-expanded={openAlarm ? "true" : undefined}
+            variant="outlined"
+            color="warning"
+            className="flex w-full h-full gap-x-2 !p-0"
+            disabled={alerts.filter((value) => value.activated).length === 0}
+            onClick={handleClickAlarm}
+          >
+            <FlashBox
+              items={alerts.filter((value) => value.activated)}
+              className="h-full w-full px-4"
+            >
+              <Badge
+                color="warning"
+                badgeContent={alerts.filter((value) => value.activated).length}
+                max={10}
+                overlap="circular"
+                anchorOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+              >
+                <TriangleAlert
+                  size={58}
+                  className={
+                    alerts.filter((value) => value.activated).length === 0
+                      ? "text-gray-500"
+                      : ""
+                  }
                 />
-                <span>-</span>
-                <InputNumber
-                  id="tempMax"
-                  placeholder="Not set"
-                  step={0.01}
-                  value={tempMax}
-                  onChange={(value) => {
-                    setTempMax(value);
-                  }}
-                />{" "}
-              </div>
-            </div>
-          </MenuItem>
-          <MenuItem>
-            <div className="flex flex-row items-center">
-              <span className="w-60"> Humidity safe range (%): </span>
-              <div className="flex flex-row gap-x-2 w-50 items-center">
-                <InputNumber
-                  id="humidityMin"
-                  placeholder="Not set"
-                  step={0.01}
-                  min={0}
-                  max={100}
-                  value={humidityMin}
-                  onChange={(value) => {
-                    setHumidityMin(value);
-                  }}
-                />{" "}
-                <span>-</span>{" "}
-                <InputNumber
-                  id="humidityMax"
-                  placeholder="Not set"
-                  step={0.01}
-                  min={0}
-                  max={100}
-                  value={humidityMax}
-                  onChange={(value) => {
-                    setHumidityMax(value);
-                  }}
-                />{" "}
-              </div>
-            </div>
-          </MenuItem>
-          <MenuItem>
-            <div className="flex flex-row items-center">
-              <span className="w-60"> CO2 safe range (ppm): </span>
-              <div className="flex flex-row gap-x-2 w-50 items-center">
-                <InputNumber
-                  id="co2Min"
-                  placeholder="Not set"
-                  step={0.01}
-                  min={0}
-                  max={1000}
-                  value={co2Min}
-                  onChange={(value) => {
-                    setCo2Min(value);
-                  }}
-                />{" "}
-                <span>-</span>{" "}
-                <InputNumber
-                  id="co2Max"
-                  placeholder="Not set"
-                  step={0.01}
-                  min={0}
-                  max={1000}
-                  value={co2Max}
-                  onChange={(value) => {
-                    setCo2Max(value);
-                  }}
-                />{" "}
-              </div>
-            </div>
-          </MenuItem>
-          <MenuItem>
-            <div className="flex flex-row items-center">
-              <span className="w-60"> TVOC safe range (ppb):</span>
-              <div className="flex flex-row gap-x-2 w-50 items-center">
-                <InputNumber
-                  id="tvocMin"
-                  placeholder="Not set"
-                  step={0.01}
-                  min={0}
-                  max={1000}
-                  value={tvocMin}
-                  onChange={(value) => {
-                    setTvocMin(value);
-                  }}
-                />{" "}
-                <span>-</span>{" "}
-                <InputNumber
-                  id="tvocMax"
-                  placeholder="Not set"
-                  step={0.01}
-                  min={0}
-                  max={1000}
-                  value={tvocMax}
-                  onChange={(value) => {
-                    setTvocMax(value);
-                  }}
+              </Badge>
+            </FlashBox>
+          </Button>
+          <Popover
+            id="alarm-popover"
+            anchorEl={anchorElAlarm}
+            open={openAlarm}
+            onClose={handleCloseAlarm}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            className="block sm:hidden w-full"
+          >
+            <TransitionGroup className="flex flex-col  overflow-x-hidden gap-x-2 w-65 h-full">
+              {alerts.map((alert, index) => (
+                <AlarmItem
+                  key={index}
+                  visible={alert.activated}
+                  message={alert.message}
                 />
-              </div>
-            </div>
-          </MenuItem>
-        </Menu>
+              ))}
+            </TransitionGroup>
+          </Popover>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row w-full gap-3 ">
@@ -392,7 +528,7 @@ const Page = () => {
                 </defs>
               </svg>
 
-              <div className="grid grid-cols-1 justify-items-center relative">
+              <div className="grid grid-cols-1 justify-items-center content-center relative">
                 <Gauge
                   value={
                     data.temperature.length > 0
@@ -406,8 +542,14 @@ const Page = () => {
                   outerRadius="100%"
                   sx={(theme) => ({
                     [`& .${gaugeClasses.valueText}`]: {
-                      fontSize: 32,
-                      transform: "translate(0px, -20px)",
+                      fontSize: {
+                        xs: 20,
+                        sm: 24,
+                      },
+                      transform: {
+                        xs: "translate(0px, -8px)",
+                        sm: "translate(0px, -10px)",
+                      },
                     },
                     [`& .${gaugeClasses.valueArc}`]: {
                       // fill: "url(#tempGradient)",
@@ -449,7 +591,7 @@ const Page = () => {
                 </defs>
               </svg>
 
-              <div className="w-full grid grid-cols-1 justify-items-center relative">
+              <div className="grid grid-cols-1 justify-items-center content-center relative">
                 <Gauge
                   value={
                     data.humidity.length > 0
@@ -462,8 +604,14 @@ const Page = () => {
                   outerRadius="100%"
                   sx={(theme) => ({
                     [`& .${gaugeClasses.valueText}`]: {
-                      fontSize: 32,
-                      transform: "translate(0px, -20px)",
+                      fontSize: {
+                        xs: 20,
+                        sm: 24,
+                      },
+                      transform: {
+                        xs: "translate(0px, -8px)",
+                        sm: "translate(0px, -10px)",
+                      },
                     },
                     [`& .${gaugeClasses.valueArc}`]: {
                       // fill: "url(#humidityGradient)",
@@ -485,9 +633,9 @@ const Page = () => {
             </div>
           </div>
 
-          <div className="w-full max-w-4xl max-h-96 border-2 rounded-[20px] border-gray-300 shadow-md">
+          <div className="w-full h-full max-w-4xl  border-2 rounded-[20px] border-gray-300 shadow-md">
             <WeatherChart
-              height={350}
+              height={375}
               className="h-full"
               data={[
                 {
@@ -529,7 +677,7 @@ const Page = () => {
                 </defs>
               </svg>
 
-              <div className="grid grid-cols-1 justify-items-center relative">
+              <div className="grid grid-cols-1 justify-items-center content-center relative">
                 <Gauge
                   value={
                     data.co2.length > 0 ? data.co2[data.co2.length - 1] : 0
@@ -541,8 +689,14 @@ const Page = () => {
                   outerRadius="100%"
                   sx={(theme) => ({
                     [`& .${gaugeClasses.valueText}`]: {
-                      fontSize: 24,
-                      transform: "translate(0px, -20px)",
+                      fontSize: {
+                        xs: 20,
+                        sm: 24,
+                      },
+                      transform: {
+                        xs: "translate(0px, -8px)",
+                        sm: "translate(0px, -10px)",
+                      },
                     },
                     [`& .${gaugeClasses.valueArc}`]: {
                       // fill: getCO2Color(
@@ -581,7 +735,7 @@ const Page = () => {
                 </defs>
               </svg>
 
-              <div className="w-full grid grid-cols-1 justify-items-center relative">
+              <div className="grid grid-cols-1 justify-items-center content-center relative">
                 <Gauge
                   value={
                     data.tvoc.length > 0 ? data.tvoc[data.tvoc.length - 1] : 0
@@ -594,8 +748,14 @@ const Page = () => {
                   outerRadius="100%"
                   sx={(theme) => ({
                     [`& .${gaugeClasses.valueText}`]: {
-                      fontSize: 24,
-                      transform: "translate(0px, -20px)",
+                      fontSize: {
+                        xs: 20,
+                        sm: 24,
+                      },
+                      transform: {
+                        xs: "translate(0px, -8px)",
+                        sm: "translate(0px, -10px)",
+                      },
                     },
                     [`& .${gaugeClasses.valueArc}`]: {
                       // fill: getTVOCColor(
@@ -614,10 +774,9 @@ const Page = () => {
             </div>
           </div>
 
-          <div className="overflow-x-auto w-full max-w-4xl max-h-96 border-2 rounded-[20px] border-gray-300 shadow-md">
+          <div className="w-full h-full max-w-4xl border-2 rounded-[20px] border-gray-300 shadow-md">
             <WeatherChart
-              className="h-full"
-              height={350}
+              height={375}
               data={[
                 {
                   id: `co2`,
